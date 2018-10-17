@@ -161,10 +161,10 @@ print('MULTI WEIGHTED LOG LOSS : %.5f ' % multi_weighted_logloss(y_true=y, y_pre
 mean_gain = importances[['gain', 'feature']].groupby('feature').mean()
 importances['mean_gain'] = importances['feature'].map(mean_gain['gain'])
 
-plt.figure(figsize=(8, 12))
-sns.barplot(x='gain', y='feature', data=importances.sort_values('mean_gain', ascending=False))
-plt.tight_layout()
-plt.savefig('importances.png')
+# plt.figure(figsize=(8, 12))
+# sns.barplot(x='gain', y='feature', data=importances.sort_values('mean_gain', ascending=False))
+# plt.tight_layout()
+# plt.savefig('importances.png')
 
 # test predict
 meta_test = pd.read_csv('../input/test_set_metadata.csv')
@@ -180,8 +180,8 @@ for i_c, df in enumerate(pd.read_csv('../input/test_set.csv', chunksize=chunks, 
     agg_test.columns = new_columns
     agg_test['mjd_diff'] = agg_test['mjd_max'] - agg_test['mjd_min']
     del agg_test['mjd_max'], agg_test['mjd_min']
-    #     del df
-    #     gc.collect()
+    del df
+    gc.collect()
 
     # Merge with meta data
     full_test = agg_test.reset_index().merge(
@@ -189,6 +189,8 @@ for i_c, df in enumerate(pd.read_csv('../input/test_set.csv', chunksize=chunks, 
         how='left',
         on='object_id'
     )
+
+    # Filling na from train
     full_test = full_test.fillna(train_mean)
 
     # Make predictions
@@ -220,6 +222,7 @@ for i_c, df in enumerate(pd.read_csv('../input/test_set.csv', chunksize=chunks, 
     if (i_c + 1) % 10 == 0:
         print('%15d done in %5.1f' % (chunks * (i_c + 1), (time.time() - start) / 60))
 
+# Store single predictions
 z = pd.read_csv('predictions.csv')
 
 print(z.groupby('object_id').size().max())
