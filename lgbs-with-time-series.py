@@ -6,12 +6,12 @@ First version from https://www.kaggle.com/ogrellier/plasticc-in-a-kernel-meta-an
 @website https://www.kaggle.com/aleksandravdyushenko
 @author Aleksandr Avdyushenko https://www.kaggle.com/aleksandravdyushenko
 """
+import gc
+import os
+
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
-import gc
-import matplotlib.pyplot as plt
-import seaborn as sns
 import lightgbm as lgb
 
 
@@ -42,7 +42,8 @@ def multi_weighted_logloss(y_true, y_preds):
     # Get the number of positives for each class
     nb_pos = y_ohe.sum(axis=0).values.astype(float)
     # Weight average and divide by the number of positives
-    class_weight_arr = np.array([class_weight[k] for k in sorted(class_weight.keys())])
+    class_weight_arr = np.array([class_weight[k]
+                                 for k in sorted(class_weight.keys())])
     y_w = y_log_ones * class_weight_arr / nb_pos
 
     loss = - np.sum(y_w) / np.sum(class_weight_arr)
@@ -56,7 +57,10 @@ def lgb_multi_weighted_logloss(y_true, y_preds):
 
 gc.enable()
 
-train = pd.read_csv('../input/training_set.csv')
+# '../input/'
+data_dir = '/data/ajavdjushenko'
+train = pd.read_csv(os.path.join(data_dir, 'training_set.csv'))
+
 
 def apply_aggs(data):
     aggs = {
@@ -83,8 +87,8 @@ agg_train = apply_aggs(train)
 del train
 gc.collect()
 
-meta_train = pd.read_csv('../input/training_set_metadata.csv')
-meta_train.head()
+meta_train = pd.read_csv(os.path.join(data_dir, 'training_set_metadata.csv'))
+# meta_train.head()
 
 full_train = agg_train.reset_index().merge(
     right=meta_train,
@@ -110,7 +114,8 @@ print('Unique classes: ', classes)
 
 if 'object_id' in full_train:
     oof_df = full_train[['object_id']]
-    del full_train['object_id'], full_train['distmod'], full_train['hostgal_specz']
+    del full_train['object_id'], full_train['distmod']
+    del full_train['hostgal_specz']
 
 # Filling na
 train_mean = full_train.mean(axis=0)
@@ -150,8 +155,10 @@ for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
         verbose=100,
         early_stopping_rounds=50
     )
-    oof_preds[val_, :] = clf.predict_proba(val_x, num_iteration=clf.best_iteration_)
-    print(multi_weighted_logloss(val_y, clf.predict_proba(val_x, num_iteration=clf.best_iteration_)))
+    oof_preds[val_, :] = clf.predict_proba(
+        val_x, num_iteration=clf.best_iteration_)
+    print(multi_weighted_logloss(val_y, clf.predict_proba(
+        val_x, num_iteration=clf.best_iteration_)))
 
     imp_df = pd.DataFrame()
     imp_df['feature'] = full_train.columns
@@ -161,7 +168,8 @@ for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
 
     clfs.append(clf)
 
-print('MULTI WEIGHTED LOG LOSS : %.5f ' % multi_weighted_logloss(y_true=y, y_preds=oof_preds))
+print('MULTI WEIGHTED LOG LOSS : %.5f ' %
+      multi_weighted_logloss(y_true=y, y_preds=oof_preds))
 
 mean_gain = importances[['gain', 'feature']].groupby('feature').mean()
 importances['mean_gain'] = importances['feature'].map(mean_gain['gain'])
@@ -172,14 +180,16 @@ importances['mean_gain'] = importances['feature'].map(mean_gain['gain'])
 # plt.savefig('importances.png')
 
 # test predict
-meta_test = pd.read_csv('../input/test_set_metadata.csv')
+
+meta_test = pd.read_csv(os.path.join(data_dir, 'test_set_metadata.csv'))
 
 import time
 
 start = time.time()
 chunks = 5000000
 
-for i_c, df in enumerate(pd.read_csv('../input/test_set.csv', chunksize=chunks, iterator=True)):
+for i_c, df in enumerate(pd.read_csv('../input/test_set.csv',
+                                     chunksize=chunks, iterator=True)):
     # Group by object id and passband
     agg_test = apply_aggs(df)
 
@@ -200,9 +210,11 @@ for i_c, df in enumerate(pd.read_csv('../input/test_set.csv', chunksize=chunks, 
     preds = None
     for clf in clfs:
         if preds is None:
-            preds = clf.predict_proba(full_test[full_train.columns]) / folds.n_splits
+            preds = clf.predict_proba(
+                full_test[full_train.columns]) / folds.n_splits
         else:
-            preds += clf.predict_proba(full_test[full_train.columns]) / folds.n_splits
+            preds += clf.predict_proba(
+                full_test[full_train.columns]) / folds.n_splits
 
     # preds_99 = 0.1 gives 1.769
     preds_99 = np.ones(preds.shape[0])
@@ -210,7 +222,8 @@ for i_c, df in enumerate(pd.read_csv('../input/test_set.csv', chunksize=chunks, 
         preds_99 *= (1 - preds[:, i])
 
     # Store predictions
-    preds_df = pd.DataFrame(preds, columns=['class_' + str(s) for s in clfs[0].classes_])
+    preds_df = pd.DataFrame(
+        preds, columns=['class_' + str(s) for s in clfs[0].classes_])
     preds_df['object_id'] = full_test['object_id']
     preds_df['class_99'] = preds_99
 
@@ -222,8 +235,9 @@ for i_c, df in enumerate(pd.read_csv('../input/test_set.csv', chunksize=chunks, 
     del agg_test, full_test, preds_df, preds
     gc.collect()
 
-    if (i_c + 1) % 10 == 0:
-        print('%15d done in %5.1f' % (chunks * (i_c + 1), (time.time() - start) / 60))
+    if (i_c + 1) % 2 == 0:
+        print('%15d done in %5.1f' %
+              (chunks * (i_c + 1), (time.time() - start) / 60))
 
 # Store single predictions
 z = pd.read_csv('predictions.csv')
