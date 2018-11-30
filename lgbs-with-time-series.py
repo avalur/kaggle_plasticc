@@ -188,7 +188,9 @@ import time
 start = time.time()
 chunks = 5000000
 
-for i_c, df in enumerate(pd.read_csv('../input/test_set.csv',
+test_path = os.path.join(data_dir, 'test_set.csv.zip')
+
+for i_c, df in enumerate(pd.read_csv(test_path,
                                      chunksize=chunks, iterator=True)):
     # Group by object id and passband
     agg_test = apply_aggs(df)
