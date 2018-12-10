@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
-from lightgbm import LGBMClassifier
+from functools import partial
+from xgboost import XGBClassifier
 from sklearn.model_selection import StratifiedKFold
 
-from competition_spec_loss import lgbm_multi_weighted_logloss, multi_weighted_logloss
+from competition_spec_loss import xgb_multi_weighted_logloss, multi_weighted_logloss
 
 
 def xgb_modeling_cross_validation(params,
