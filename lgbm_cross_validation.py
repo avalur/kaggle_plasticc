@@ -1,3 +1,5 @@
+from functools import partial
+
 import numpy as np
 import pandas as pd
 from lightgbm import LGBMClassifier
@@ -12,6 +14,7 @@ def lgbm_modeling_cross_validation(params,
                                    classes,
                                    class_weights,
                                    id,
+                                   part,
                                    nr_fold=5,
                                    random_state=1,
                                    ):
@@ -26,6 +29,7 @@ def lgbm_modeling_cross_validation(params,
                             random_state=random_state)
 
     oof_preds = np.zeros((len(full_train), np.unique(y).shape[0]))
+
     for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
         trn_x, trn_y = full_train.iloc[trn_], y.iloc[trn_]
         val_x, val_y = full_train.iloc[val_], y.iloc[val_]
@@ -58,9 +62,9 @@ def lgbm_modeling_cross_validation(params,
     print('MULTI WEIGHTED LOG LOSS: {:.5f}'.format(score))
 
     oof_preds_pd = pd.DataFrame(data=oof_preds, columns=['class_{}'.format(s) for s in classes])
-    pd.concat([id, oof_preds_pd], axis=1).to_csv('lgbm_train_oof_preds.csv', index=False)
+    pd.concat([id, oof_preds_pd], axis=1).to_csv('lgbm_train_oof_preds_{}.csv'.format(part), index=False)
     df_importances = save_importances(importances_=importances)
-    df_importances.to_csv('lgbm_importances.csv', index=False)
+    df_importances.to_csv('lgbm_importances_{}.csv'.format(part), index=False)
 
     return clfs, score
 

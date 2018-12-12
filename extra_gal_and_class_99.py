@@ -3,12 +3,15 @@ import pandas as pd
 
 
 def gen_unknown(data):
-    return ((((((data["mymedian"]) + (((data["mymean"]) / 2.0)))/2.0)) + (((((1.0) - (((data["mymax"]) * (((data["mymax"]) * (data["mymax"]))))))) / 2.0)))/2.0)
+    return (0.5 + 0.5 * data["mymedian"] + 0.25 * data["mymean"] - 0.5 * data["mymax"] ** 3) / 2
 
 
 feats = ['class_6', 'class_15', 'class_16', 'class_42', 'class_52', 'class_53',
          'class_62', 'class_64', 'class_65', 'class_67', 'class_88', 'class_90',
          'class_92', 'class_95']
+
+galactic_classes = [6, 16, 53, 65, 92]
+extragalactic_classes = [15, 42, 52, 62, 64, 67, 88, 90, 95]
 
 
 def class_99(subm):
