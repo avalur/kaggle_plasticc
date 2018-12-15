@@ -91,7 +91,7 @@ def train_model(full_train, classes, class_weights, part):
                         random_state=1,
                         )
 
-    lgbm_params.update({'n_estimators': 1000})
+    lgbm_params.update({'n_estimators': 2000})
 
     # modeling from CV
     clfs, score = eval_func(lgbm_params)

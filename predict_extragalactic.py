@@ -20,48 +20,53 @@ def predict_chunk(df_, clfs_gal_, clfs_ext_, meta_, features):
 
     # Make predictions
     preds_gal = None
-    for clf in clfs_gal_:
-        if preds_gal is None:
-            preds_gal = clf.predict_proba(gal_test[features])
-        else:
-            preds_gal += clf.predict_proba(gal_test[features])
+    if not gal_test.empty:
+        for clf in clfs_gal_:
+            if preds_gal is None:
+                preds_gal = clf.predict_proba(gal_test[features])
+            else:
+                preds_gal += clf.predict_proba(gal_test[features])
 
-    preds_gal = preds_gal / len(clfs_gal_)
+        preds_gal = preds_gal / len(clfs_gal_)
 
-    preds_99_gal = np.ones(preds_gal.shape[0])
-    for i in range(preds_gal.shape[1]):
-        preds_99_gal *= (1 - preds_gal[:, i])
+        preds_99_gal = np.ones(preds_gal.shape[0])
+        for i in range(preds_gal.shape[1]):
+            preds_99_gal *= (1 - preds_gal[:, i])
 
-    # Create DataFrame from predictions
-    preds_gal = pd.DataFrame(preds_gal,
-                             columns=['class_{}'.format(s) for s in clfs_gal_[0].classes_])
-    preds_gal['object_id'] = gal_test['object_id']
-    for c in ['class_{}'.format(s) for s in extragalactic_classes]:
-        preds_gal.insert(0, c, 0.0)
-    preds_gal['class_99'] = 0.017 * preds_99_gal / np.mean(preds_99_gal)
+        # Create DataFrame from predictions
+        preds_gal = pd.DataFrame(preds_gal,
+                                 columns=['class_{}'.format(s) for s in clfs_gal_[0].classes_])
+        assert preds_gal.shape[0] == gal_test.shape[0], 'len of preds={}, test={}'.format(preds_gal.shape[0], gal_test.shape[0])
+        preds_gal['object_id'] = gal_test['object_id'].values
+        for c in ['class_{}'.format(s) for s in extragalactic_classes]:
+            preds_gal.insert(0, c, 0.0)
+        preds_gal['class_99'] = 0.017 * preds_99_gal / np.mean(preds_99_gal)
 
     preds_ext = None
-    for clf in clfs_ext_:
-        if preds_ext is None:
-            preds_ext = clf.predict_proba(ext_test[features])
-        else:
-            preds_ext += clf.predict_proba(ext_test[features])
+    if not ext_test.empty:
+        for clf in clfs_ext_:
+            if preds_ext is None:
+                preds_ext = clf.predict_proba(ext_test[features])
+            else:
+                preds_ext += clf.predict_proba(ext_test[features])
 
-    preds_ext = preds_ext / len(clfs_ext_)
+        preds_ext = preds_ext / len(clfs_ext_)
 
-    preds_99_ext = np.ones(preds_ext.shape[0])
-    for i in range(preds_ext.shape[1]):
-        preds_99_ext *= (1 - preds_ext[:, i])
+        preds_99_ext = np.ones(preds_ext.shape[0])
+        for i in range(preds_ext.shape[1]):
+            preds_99_ext *= (1 - preds_ext[:, i])
 
-    # Create DataFrame from predictions
-    preds_ext = pd.DataFrame(preds_ext,
-                             columns=['class_{}'.format(s) for s in clfs_ext_[0].classes_])
-    preds_ext['object_id'] = ext_test['object_id']
-    for c in ['class_{}'.format(s) for s in galactic_classes]:
-        preds_ext.insert(0, c, 0.0)
-    preds_ext['class_99'] = 0.17 * preds_99_ext / np.mean(preds_99_ext)
+        # Create DataFrame from predictions
+        preds_ext = pd.DataFrame(preds_ext,
+                                 columns=['class_{}'.format(s) for s in clfs_ext_[0].classes_])
+        assert preds_ext.shape[0] == ext_test.shape[0], 'len of preds={}, test={}'.format(preds_ext.shape[0], ext_test.shape[0])
+        preds_ext['object_id'] = ext_test['object_id'].values
+        for c in ['class_{}'.format(s) for s in galactic_classes]:
+            preds_ext.insert(0, c, 0.0)
+        preds_ext['class_99'] = 0.17 * preds_99_ext / np.mean(preds_99_ext)
 
-    preds_df_ = pd.concat([preds_gal, preds_ext])
+    preds_df_ = pd.concat([preds_gal, preds_ext], ignore_index=True, sort=False)
+
     return preds_df_
 
 
