@@ -21,7 +21,7 @@ def class_99(subm):
     y['mymax'] = subm[feats].max(axis=1)
 
     subm['class_99'] = gen_unknown(y)
-    # subm.to_csv('single_subm_pred_gen_unknown.csv', index=False)
+    subm.to_csv('single_subm_2_lgbm_gen_unknown.csv', index=False)
 
 
 def extragalactic(subm):
@@ -41,9 +41,9 @@ def extragalactic(subm):
 
 
 def main(argc, argv):
-    subm = pd.read_csv('predictions_1_037.csv')
+    subm = pd.read_csv('single_subm_0.140558_0.878743_2018-12-15-09-51.csv')
     class_99(subm)
-    extragalactic(subm)
+    # extragalactic(subm)
 
 
 if __name__ == '__main__':

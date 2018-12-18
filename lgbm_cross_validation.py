@@ -1,7 +1,6 @@
-from functools import partial
-
 import numpy as np
 import pandas as pd
+from imblearn.over_sampling import SMOTE
 from lightgbm import LGBMClassifier
 from sklearn.model_selection import StratifiedKFold
 
@@ -33,6 +32,11 @@ def lgbm_modeling_cross_validation(params,
     for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
         trn_x, trn_y = full_train.iloc[trn_], y.iloc[trn_]
         val_x, val_y = full_train.iloc[val_], y.iloc[val_]
+
+        sm = SMOTE(k_neighbors=7, n_jobs=4, random_state=21)
+        trn_x, trn_y = sm.fit_resample(trn_x, trn_y)
+        trn_x = pd.DataFrame(trn_x, columns=full_train.columns)
+        trn_y = pd.Series(trn_y)
 
         clf = LGBMClassifier(**params)
         clf.fit(
